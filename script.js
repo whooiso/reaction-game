@@ -443,7 +443,7 @@ function endGame() {
 
 // --- Start button ---
 startBtn.addEventListener("click", () => {
-  unlockAudioOnce();     // important for iPad
+  unlockAudioOnce();
   startGame();
 });
 
