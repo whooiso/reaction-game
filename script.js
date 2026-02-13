@@ -52,6 +52,7 @@ muteBtn.textContent = muted ? "🔇" : "🔊";
 
 const SND_PINATA = "assets/sounds/pinatas.mp3";
 const SND_DONKEY = "assets/sounds/donkeys.mp3";
+const SND_GOLDEN = "assets/sounds/golds.mp3";
 
 // We create new Audio instances on demand for rapid overlaps (multiple taps).
 // But we "unlock" once on first user gesture so iPad/Safari allows playback.
@@ -105,7 +106,7 @@ function playBray() {
 
 // Keep a "golden" sound: reuse pinata but higher pitch + slightly louder
 function playGolden() {
-  playSfx(SND_PINATA, { volume: 1.0, playbackRate: 1.25 });
+  playSfx(SND_GOLDEN, { volume: 1.0 });
 }
 
 // --- Mute toggle ---
