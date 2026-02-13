@@ -8,8 +8,28 @@
 </head>
 <body>
   <div id="game" class="state-idle">
+    <div id="controls">
+      <select id="difficulty" title="Difficulty">
+        <option value="chill">Chill</option>
+        <option value="normal" selected>Normal</option>
+        <option value="insane">Insane</option>
+      </select>
+    </div>
+
     <h1 id="message">Click to start</h1>
     <p id="subtitle"></p>
+
+    <div id="stats">
+      <div class="stat"><span class="stat-label">Last</span><span id="stat-last">—</span></div>
+      <div class="stat"><span class="stat-label">Best</span><span id="stat-best">—</span></div>
+      <div class="stat"><span class="stat-label">Avg</span><span id="stat-avg">—</span></div>
+      <div class="stat"><span class="stat-label">Tries</span><span id="stat-tries">0</span></div>
+      <div class="stat"><span class="stat-label">Streak</span><span id="stat-streak">0</span></div>
+      <div class="stat stat-pb"><span class="stat-label">Personal best</span><span id="stat-pb">—</span></div>
+    </div>
+
+    <button id="reset-pb">Reset personal best</button>
+    <canvas id="confetti"></canvas>
   </div>
   <script src="script.js"></script>
 </body>
