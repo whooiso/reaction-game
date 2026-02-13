@@ -24,6 +24,45 @@ const MARGIN_SIDE = 30;
 const MARGIN_BOTTOM = 30;
 const DONKEY_SIZE = 90;   // approximate rendered size
 
+// --- Audio (Web Audio API) ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playPop() {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  // Bright two-tone ding: quick rise
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.08);
+
+  gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+
+  osc.start(audioCtx.currentTime);
+  osc.stop(audioCtx.currentTime + 0.2);
+}
+
+function playError() {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  // Low dull buzz that drops off
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.18);
+
+  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+
+  osc.start(audioCtx.currentTime);
+  osc.stop(audioCtx.currentTime + 0.25);
+}
+
 // --- State ---
 let score = 0;
 let timeLeft = GAME_DURATION;
@@ -96,9 +135,11 @@ donkey.addEventListener("click", (e) => {
   if (currentType === "pinata") {
     score++;
     showFloat(floatX, floatY, "+1", true);
+    playPop();
   } else {
     score--;
     showFloat(floatX, floatY, "-1", false);
+    playError();
   }
 
   scoreEl.textContent = score;
@@ -168,4 +209,8 @@ function endGame() {
 }
 
 // --- Start button ---
-startBtn.addEventListener("click", startGame);
+startBtn.addEventListener("click", () => {
+  // Resume AudioContext on first user gesture (browser policy)
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  startGame();
+});
