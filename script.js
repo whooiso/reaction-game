@@ -27,6 +27,8 @@ const WAVE_GAP_MAX = 500;
 const GOLDEN_CHANCE = 0.08;
 const REAL_CHANCE = 0.30;    // of non-golden targets
 
+const SPEECH_LINES = ["&$#@!", "HEY!", "BONK?!", "RUDE!", "NOPE!", "?!?"];
+
 const IMG_PINATA = "assets/pinata.png";
 const IMG_REAL = "assets/real-donkey.png";
 
@@ -230,6 +232,13 @@ function spawnTarget(type, pos) {
   img.draggable = false;
   el.appendChild(img);
 
+  // Add mouth overlay for real donkeys (used for "mouth open" illusion)
+  if (type === "real") {
+    const mouthOverlay = document.createElement("div");
+    mouthOverlay.className = "mouth-overlay";
+    el.appendChild(mouthOverlay);
+  }
+
   el.style.left = pos.x + "px";
   el.style.top = pos.y + "px";
 
@@ -274,7 +283,24 @@ function spawnTarget(type, pos) {
       showFloat(fx, fy, "-1", "negative");
       playError();
       flashRed();
-      el.className = "target hit-real";
+
+      // A) Speech bubble
+      const bubble = document.createElement("div");
+      bubble.className = "speech-bubble";
+      bubble.textContent = SPEECH_LINES[Math.floor(Math.random() * SPEECH_LINES.length)];
+      el.appendChild(bubble);
+
+      // B) "Mouth open" illusion
+      const imgEl = el.querySelector("img");
+      const overlay = el.querySelector(".mouth-overlay");
+      if (imgEl) imgEl.classList.add("mouth-open");
+      if (overlay) overlay.classList.add("active");
+      setTimeout(() => {
+        if (imgEl) imgEl.classList.remove("mouth-open");
+        if (overlay) overlay.classList.remove("active");
+      }, 120);
+
+      el.className = "target real hit-real";
     } else {
       // golden
       score += 5;
