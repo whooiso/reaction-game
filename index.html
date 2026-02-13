@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Donkey Clicker</title>
   <link rel="stylesheet" href="style.css">
+  <!-- Preload images so they appear instantly -->
+  <link rel="preload" as="image" href="assets/pinata.png">
+  <link rel="preload" as="image" href="assets/real-donkey.png">
 </head>
 <body>
   <!-- HUD -->
@@ -17,6 +20,9 @@
   <!-- Floating score feedback -->
   <div id="float-container"></div>
 
+  <!-- Red flash overlay for wrong clicks -->
+  <div id="flash-overlay"></div>
+
   <!-- Game arena -->
   <div id="arena">
     <!-- Start / Game-over overlay -->
@@ -26,12 +32,9 @@
       <button id="start-btn">Start Game</button>
     </div>
 
-    <!-- Donkey target (hidden until spawned) -->
+    <!-- Donkey target (centered, hidden until spawned) -->
     <div id="donkey" class="hidden">
-      <div id="donkey-inner">
-        <span id="donkey-emoji"></span>
-        <span id="donkey-label"></span>
-      </div>
+      <img id="donkey-img" src="" alt="donkey" draggable="false">
     </div>
   </div>
 

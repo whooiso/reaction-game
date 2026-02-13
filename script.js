@@ -8,9 +8,9 @@ const overlayTitle = document.getElementById("overlay-title");
 const overlaySub = document.getElementById("overlay-sub");
 const startBtn = document.getElementById("start-btn");
 const donkey = document.getElementById("donkey");
-const donkeyEmoji = document.getElementById("donkey-emoji");
-const donkeyLabel = document.getElementById("donkey-label");
+const donkeyImg = document.getElementById("donkey-img");
 const floatContainer = document.getElementById("float-container");
+const flashOverlay = document.getElementById("flash-overlay");
 
 // --- Constants ---
 const GAME_DURATION = 30;
@@ -18,11 +18,14 @@ const SPAWN_DELAY_MIN = 400;
 const SPAWN_DELAY_MAX = 1200;
 const PINATA_CHANCE = 0.65;
 
-// Safe zone: keep donkeys away from edges
-const MARGIN_TOP = 80;   // below HUD
-const MARGIN_SIDE = 30;
-const MARGIN_BOTTOM = 30;
-const DONKEY_SIZE = 90;   // approximate rendered size
+const IMG_PINATA = "assets/pinata.png";
+const IMG_REAL = "assets/real-donkey.png";
+
+// --- Preload images ---
+const preloadPinata = new Image();
+preloadPinata.src = IMG_PINATA;
+const preloadReal = new Image();
+preloadReal.src = IMG_REAL;
 
 // --- Audio (Web Audio API) ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -33,7 +36,6 @@ function playPop() {
   osc.connect(gain);
   gain.connect(audioCtx.destination);
 
-  // Bright two-tone ding: quick rise
   osc.type = "sine";
   osc.frequency.setValueAtTime(880, audioCtx.currentTime);
   osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.08);
@@ -51,7 +53,6 @@ function playError() {
   osc.connect(gain);
   gain.connect(audioCtx.destination);
 
-  // Low dull buzz that drops off
   osc.type = "triangle";
   osc.frequency.setValueAtTime(220, audioCtx.currentTime);
   osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.18);
@@ -86,32 +87,20 @@ function showFloat(x, y, text, positive) {
   el.addEventListener("animationend", () => el.remove());
 }
 
-// --- Donkey spawning ---
+// --- Red flash ---
+function flashRed() {
+  flashOverlay.classList.add("active");
+  setTimeout(() => flashOverlay.classList.remove("active"), 200);
+}
+
+// --- Donkey spawning (centered) ---
 function spawnDonkey() {
   if (!running) return;
 
-  // Pick type
   currentType = Math.random() < PINATA_CHANCE ? "pinata" : "real";
+  donkeyImg.src = currentType === "pinata" ? IMG_PINATA : IMG_REAL;
 
-  // Pick random position within the arena
-  const maxX = window.innerWidth - DONKEY_SIZE - MARGIN_SIDE;
-  const maxY = window.innerHeight - DONKEY_SIZE - MARGIN_BOTTOM;
-  const x = MARGIN_SIDE + Math.random() * (maxX - MARGIN_SIDE);
-  const y = MARGIN_TOP + Math.random() * (maxY - MARGIN_TOP);
-
-  donkey.style.left = x + "px";
-  donkey.style.top = y + "px";
-
-  // Set appearance
-  if (currentType === "pinata") {
-    donkeyEmoji.textContent = "\uD83C\uDF89"; // party popper as pinata stand-in
-    donkeyLabel.textContent = "pinata";
-  } else {
-    donkeyEmoji.textContent = "\uD83D\uDC34"; // horse/donkey face
-    donkeyLabel.textContent = "real";
-  }
-
-  donkey.className = "visible " + currentType;
+  donkey.className = "visible";
 }
 
 function hideDonkey() {
@@ -125,8 +114,10 @@ function scheduleNextSpawn() {
 }
 
 // --- Click handler ---
-donkey.addEventListener("click", (e) => {
-  if (!running || donkey.classList.contains("clicked")) return;
+donkey.addEventListener("click", () => {
+  if (!running || donkey.className === "hidden") return;
+  // Prevent double-clicks during hit animation
+  if (donkey.className.startsWith("hit-")) return;
 
   const rect = donkey.getBoundingClientRect();
   const floatX = rect.left + rect.width / 2 - 10;
@@ -136,21 +127,23 @@ donkey.addEventListener("click", (e) => {
     score++;
     showFloat(floatX, floatY, "+1", true);
     playPop();
+    donkey.className = "hit-pinata";
   } else {
     score--;
     showFloat(floatX, floatY, "-1", false);
     playError();
+    flashRed();
+    donkey.className = "hit-real";
   }
 
   scoreEl.textContent = score;
 
-  // Shrink-out animation, then schedule next
-  donkey.classList.add("clicked");
-  donkey.classList.remove("visible");
+  // Wait for animation to finish, then hide and schedule next
+  const delay = currentType === "pinata" ? 350 : 400;
   setTimeout(() => {
     hideDonkey();
     scheduleNextSpawn();
-  }, 200);
+  }, delay);
 });
 
 // --- Timer ---
@@ -179,7 +172,6 @@ function startGame() {
   overlay.classList.remove("visible");
   hideDonkey();
 
-  // First spawn after a short beat
   spawnTimeout = setTimeout(spawnDonkey, 600);
   timerInterval = setInterval(tick, 1000);
 }
@@ -190,7 +182,6 @@ function endGame() {
   clearTimeout(spawnTimeout);
   hideDonkey();
 
-  // Check high score
   let newBest = false;
   if (score > highScore) {
     highScore = score;
@@ -199,7 +190,6 @@ function endGame() {
     newBest = true;
   }
 
-  // Show game-over overlay
   overlayTitle.textContent = "Time's up!";
   const lines = ["Final score: " + score];
   if (newBest && score > 0) lines.push("New high score!");
@@ -210,7 +200,6 @@ function endGame() {
 
 // --- Start button ---
 startBtn.addEventListener("click", () => {
-  // Resume AudioContext on first user gesture (browser policy)
   if (audioCtx.state === "suspended") audioCtx.resume();
   startGame();
 });
