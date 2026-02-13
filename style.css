@@ -8,149 +8,211 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   height: 100vh;
   overflow: hidden;
+  background: #fdf6ec;
+  color: #3a2e1f;
 }
 
-#game {
+/* ---------- HUD ---------- */
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  height: 100vh;
-  cursor: pointer;
-  user-select: none;
-  transition: background-color 0.05s;
-  position: relative;
-}
-
-#message {
-  font-size: 3rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-#subtitle {
-  margin-top: 1rem;
-  font-size: 1.25rem;
-  opacity: 0.7;
-}
-
-/* ---------- Controls ---------- */
-#controls {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-}
-
-#difficulty {
-  appearance: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.85rem;
-  cursor: pointer;
-  outline: none;
-}
-
-#difficulty option {
-  background: #1a1a2e;
-  color: #e0e0e0;
-}
-
-/* ---------- Stats ---------- */
-#stats {
-  display: flex;
-  gap: 2rem;
-  margin-top: 2.5rem;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.stat-label {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  opacity: 0.5;
-}
-
-.stat span:last-child {
+  padding: 1rem 2rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  z-index: 20;
   font-size: 1.1rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.stat-pb {
-  border-left: 1px solid rgba(255, 255, 255, 0.15);
-  padding-left: 2rem;
+#timer-display {
+  font-size: 1.6rem;
+  font-weight: 700;
+  min-width: 3.5ch;
+  text-align: center;
 }
 
-/* ---------- Reset PB button ---------- */
-#reset-pb {
+#timer-display.urgent {
+  color: #e74c3c;
+  animation: timer-shake 0.4s ease-in-out infinite;
+}
+
+@keyframes timer-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* ---------- Arena ---------- */
+#arena {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ---------- Overlay (start / game-over) ---------- */
+#overlay {
   position: absolute;
-  bottom: 1.5rem;
-  background: none;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: inherit;
-  opacity: 0.4;
-  font-size: 0.75rem;
-  padding: 0.3rem 0.8rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-#reset-pb:hover {
-  opacity: 0.8;
-}
-
-/* ---------- Confetti canvas ---------- */
-#confetti {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(253, 246, 236, 0.92);
+  backdrop-filter: blur(6px);
+  z-index: 15;
+  opacity: 0;
   pointer-events: none;
-  z-index: 10;
+  transition: opacity 0.35s ease;
 }
 
-/* ---------- State colors ---------- */
-.state-idle {
-  background-color: #1a1a2e;
-  color: #e0e0e0;
+#overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
-.state-waiting {
-  background-color: #1a1a2e;
-  color: #e0e0e0;
+#overlay-title {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
 }
 
-.state-ready {
-  background-color: #2ecc71;
+#overlay-sub {
+  font-size: 1.15rem;
+  opacity: 0.6;
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+#start-btn {
+  background: #e67e22;
   color: #fff;
-  animation: pulse 0.6s ease-in-out infinite;
+  border: none;
+  padding: 0.9rem 2.8rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease;
 }
 
-.state-result {
-  background-color: #1a1a2e;
-  color: #e0e0e0;
+#start-btn:hover {
+  background: #d35400;
+  transform: scale(1.04);
 }
 
-.state-early {
-  background-color: #e74c3c;
-  color: #fff;
+#start-btn:active {
+  transform: scale(0.97);
 }
 
-/* ---------- Pulse animation for green screen ---------- */
-@keyframes pulse {
-  0%, 100% { background-color: #2ecc71; }
-  50% { background-color: #27ae60; }
+/* ---------- Donkey target ---------- */
+#donkey {
+  position: absolute;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+#donkey.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.5);
+}
+
+#donkey.visible {
+  opacity: 1;
+  pointer-events: auto;
+  animation: donkey-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+#donkey.clicked {
+  animation: donkey-shrink 0.2s ease forwards;
+  pointer-events: none;
+}
+
+#donkey-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+#donkey-emoji {
+  font-size: 4.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+#donkey-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  opacity: 0.85;
+}
+
+/* Pinata variant */
+#donkey.pinata #donkey-label {
+  background: rgba(46, 204, 113, 0.2);
+  color: #27ae60;
+}
+
+/* Real variant */
+#donkey.real #donkey-label {
+  background: rgba(231, 76, 60, 0.2);
+  color: #c0392b;
+}
+
+@keyframes donkey-pop {
+  0% { transform: scale(0.3); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes donkey-shrink {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+/* ---------- Floating score text ---------- */
+#float-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 25;
+}
+
+.float-text {
+  position: absolute;
+  font-size: 1.6rem;
+  font-weight: 700;
+  pointer-events: none;
+  animation: float-up 0.8s ease-out forwards;
+}
+
+.float-text.positive {
+  color: #27ae60;
+}
+
+.float-text.negative {
+  color: #e74c3c;
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(1.3);
+  }
 }

@@ -3,34 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reaction Speed Game</title>
+  <title>Donkey Clicker</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="game" class="state-idle">
-    <div id="controls">
-      <select id="difficulty" title="Difficulty">
-        <option value="chill">Chill</option>
-        <option value="normal" selected>Normal</option>
-        <option value="insane">Insane</option>
-      </select>
-    </div>
-
-    <h1 id="message">Click to start</h1>
-    <p id="subtitle"></p>
-
-    <div id="stats">
-      <div class="stat"><span class="stat-label">Last</span><span id="stat-last">—</span></div>
-      <div class="stat"><span class="stat-label">Best</span><span id="stat-best">—</span></div>
-      <div class="stat"><span class="stat-label">Avg</span><span id="stat-avg">—</span></div>
-      <div class="stat"><span class="stat-label">Tries</span><span id="stat-tries">0</span></div>
-      <div class="stat"><span class="stat-label">Streak</span><span id="stat-streak">0</span></div>
-      <div class="stat stat-pb"><span class="stat-label">Personal best</span><span id="stat-pb">—</span></div>
-    </div>
-
-    <button id="reset-pb">Reset personal best</button>
-    <canvas id="confetti"></canvas>
+  <!-- HUD -->
+  <div id="hud">
+    <div id="score-display">Score: <span id="score">0</span></div>
+    <div id="timer-display"><span id="timer">30</span>s</div>
+    <div id="high-display">Best: <span id="high-score">0</span></div>
   </div>
+
+  <!-- Floating score feedback -->
+  <div id="float-container"></div>
+
+  <!-- Game arena -->
+  <div id="arena">
+    <!-- Start / Game-over overlay -->
+    <div id="overlay" class="visible">
+      <h1 id="overlay-title">Donkey Clicker</h1>
+      <p id="overlay-sub">Click the pinata donkeys for points.<br>Avoid the real ones!</p>
+      <button id="start-btn">Start Game</button>
+    </div>
+
+    <!-- Donkey target (hidden until spawned) -->
+    <div id="donkey" class="hidden">
+      <div id="donkey-inner">
+        <span id="donkey-emoji"></span>
+        <span id="donkey-label"></span>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>

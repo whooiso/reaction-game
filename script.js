@@ -1,197 +1,171 @@
-const game = document.getElementById("game");
-const message = document.getElementById("message");
-const subtitle = document.getElementById("subtitle");
-const difficultySelect = document.getElementById("difficulty");
-const resetPbBtn = document.getElementById("reset-pb");
+// --- DOM refs ---
+const scoreEl = document.getElementById("score");
+const timerEl = document.getElementById("timer");
+const timerDisplay = document.getElementById("timer-display");
+const highScoreEl = document.getElementById("high-score");
+const overlay = document.getElementById("overlay");
+const overlayTitle = document.getElementById("overlay-title");
+const overlaySub = document.getElementById("overlay-sub");
+const startBtn = document.getElementById("start-btn");
+const donkey = document.getElementById("donkey");
+const donkeyEmoji = document.getElementById("donkey-emoji");
+const donkeyLabel = document.getElementById("donkey-label");
+const floatContainer = document.getElementById("float-container");
 
-const statLast = document.getElementById("stat-last");
-const statBest = document.getElementById("stat-best");
-const statAvg = document.getElementById("stat-avg");
-const statTries = document.getElementById("stat-tries");
-const statStreak = document.getElementById("stat-streak");
-const statPb = document.getElementById("stat-pb");
+// --- Constants ---
+const GAME_DURATION = 30;
+const SPAWN_DELAY_MIN = 400;
+const SPAWN_DELAY_MAX = 1200;
+const PINATA_CHANCE = 0.65;
 
-const DIFFICULTIES = {
-  chill:  [1000, 3000],
-  normal: [2000, 6000],
-  insane: [3000, 10000],
-};
+// Safe zone: keep donkeys away from edges
+const MARGIN_TOP = 80;   // below HUD
+const MARGIN_SIDE = 30;
+const MARGIN_BOTTOM = 30;
+const DONKEY_SIZE = 90;   // approximate rendered size
 
-let state = "idle";
-let timeoutId = null;
-let startTime = 0;
+// --- State ---
+let score = 0;
+let timeLeft = GAME_DURATION;
+let timerInterval = null;
+let spawnTimeout = null;
+let running = false;
+let currentType = null; // "pinata" | "real"
 
-// Session stats
-let times = [];
-let streak = 0;
+// High score from localStorage
+let highScore = Number(localStorage.getItem("donkeyHighScore")) || 0;
+highScoreEl.textContent = highScore;
 
-// Personal best from localStorage
-let personalBest = Number(localStorage.getItem("reactionPB")) || null;
-if (personalBest) statPb.textContent = personalBest + " ms";
-
-// --- Confetti ---
-const confettiCanvas = document.getElementById("confetti");
-const ctx = confettiCanvas.getContext("2d");
-let particles = [];
-let confettiAnimId = null;
-
-function resizeConfetti() {
-  confettiCanvas.width = window.innerWidth;
-  confettiCanvas.height = window.innerHeight;
-}
-resizeConfetti();
-window.addEventListener("resize", resizeConfetti);
-
-function spawnConfetti() {
-  particles = [];
-  const colors = ["#f1c40f", "#e74c3c", "#2ecc71", "#3498db", "#e67e22", "#9b59b6"];
-  const cx = confettiCanvas.width / 2;
-  const cy = confettiCanvas.height / 2;
-
-  for (let i = 0; i < 80; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 2 + Math.random() * 6;
-    particles.push({
-      x: cx,
-      y: cy,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 2,
-      size: 3 + Math.random() * 4,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      life: 1,
-      decay: 0.01 + Math.random() * 0.015,
-    });
-  }
-
-  if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
-  animateConfetti();
+// --- Floating score feedback ---
+function showFloat(x, y, text, positive) {
+  const el = document.createElement("div");
+  el.className = "float-text " + (positive ? "positive" : "negative");
+  el.textContent = text;
+  el.style.left = x + "px";
+  el.style.top = y + "px";
+  floatContainer.appendChild(el);
+  el.addEventListener("animationend", () => el.remove());
 }
 
-function animateConfetti() {
-  ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-  let alive = false;
+// --- Donkey spawning ---
+function spawnDonkey() {
+  if (!running) return;
 
-  for (const p of particles) {
-    if (p.life <= 0) continue;
-    alive = true;
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.12; // gravity
-    p.life -= p.decay;
+  // Pick type
+  currentType = Math.random() < PINATA_CHANCE ? "pinata" : "real";
 
-    ctx.globalAlpha = Math.max(0, p.life);
-    ctx.fillStyle = p.color;
-    ctx.fillRect(p.x, p.y, p.size, p.size);
-  }
+  // Pick random position within the arena
+  const maxX = window.innerWidth - DONKEY_SIZE - MARGIN_SIDE;
+  const maxY = window.innerHeight - DONKEY_SIZE - MARGIN_BOTTOM;
+  const x = MARGIN_SIDE + Math.random() * (maxX - MARGIN_SIDE);
+  const y = MARGIN_TOP + Math.random() * (maxY - MARGIN_TOP);
 
-  ctx.globalAlpha = 1;
+  donkey.style.left = x + "px";
+  donkey.style.top = y + "px";
 
-  if (alive) {
-    confettiAnimId = requestAnimationFrame(animateConfetti);
+  // Set appearance
+  if (currentType === "pinata") {
+    donkeyEmoji.textContent = "\uD83C\uDF89"; // party popper as pinata stand-in
+    donkeyLabel.textContent = "pinata";
   } else {
-    confettiAnimId = null;
+    donkeyEmoji.textContent = "\uD83D\uDC34"; // horse/donkey face
+    donkeyLabel.textContent = "real";
   }
+
+  donkey.className = "visible " + currentType;
 }
 
-// --- State management ---
-function setState(newState) {
-  state = newState;
-  game.className = "state-" + newState;
+function hideDonkey() {
+  donkey.className = "hidden";
+  currentType = null;
 }
 
-function getDelay() {
-  const [min, max] = DIFFICULTIES[difficultySelect.value] || DIFFICULTIES.normal;
-  return min + Math.random() * (max - min);
+function scheduleNextSpawn() {
+  const delay = SPAWN_DELAY_MIN + Math.random() * (SPAWN_DELAY_MAX - SPAWN_DELAY_MIN);
+  spawnTimeout = setTimeout(spawnDonkey, delay);
 }
 
-function startWaiting() {
-  setState("waiting");
-  message.textContent = "Wait for green...";
-  subtitle.textContent = "";
+// --- Click handler ---
+donkey.addEventListener("click", (e) => {
+  if (!running || donkey.classList.contains("clicked")) return;
 
-  timeoutId = setTimeout(() => {
-    setState("ready");
-    message.textContent = "Click!";
-    startTime = performance.now();
-  }, getDelay());
-}
+  const rect = donkey.getBoundingClientRect();
+  const floatX = rect.left + rect.width / 2 - 10;
+  const floatY = rect.top;
 
-function showResult() {
-  const reactionTime = Math.round(performance.now() - startTime);
-  times.push(reactionTime);
-
-  // Streak
-  if (reactionTime < 250) {
-    streak++;
+  if (currentType === "pinata") {
+    score++;
+    showFloat(floatX, floatY, "+1", true);
   } else {
-    streak = 0;
+    score--;
+    showFloat(floatX, floatY, "-1", false);
   }
 
-  // Check personal best
-  let newPb = false;
-  if (!personalBest || reactionTime < personalBest) {
-    personalBest = reactionTime;
-    localStorage.setItem("reactionPB", personalBest);
-    newPb = true;
-  }
+  scoreEl.textContent = score;
 
-  setState("result");
-  message.textContent = reactionTime + " ms";
-  subtitle.textContent = newPb ? "New personal best!" : "Click to try again";
-
-  updateStats();
-
-  if (newPb) spawnConfetti();
-}
-
-function tooEarly() {
-  clearTimeout(timeoutId);
-  streak = 0;
-  setState("early");
-  message.textContent = "Too soon!";
-  subtitle.textContent = "Click to restart";
-  updateStats();
-}
-
-function updateStats() {
-  const last = times[times.length - 1];
-  const best = Math.min(...times);
-  const avg = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
-
-  statLast.textContent = last ? last + " ms" : "—";
-  statBest.textContent = times.length ? best + " ms" : "—";
-  statAvg.textContent = times.length ? avg + " ms" : "—";
-  statTries.textContent = times.length;
-  statStreak.textContent = streak;
-  statPb.textContent = personalBest ? personalBest + " ms" : "—";
-}
-
-// --- Events ---
-game.addEventListener("click", (e) => {
-  // Ignore clicks on controls
-  if (e.target.closest("#controls") || e.target.closest("#reset-pb")) return;
-
-  switch (state) {
-    case "idle":
-    case "result":
-    case "early":
-      startWaiting();
-      break;
-    case "waiting":
-      tooEarly();
-      break;
-    case "ready":
-      showResult();
-      break;
-  }
+  // Shrink-out animation, then schedule next
+  donkey.classList.add("clicked");
+  donkey.classList.remove("visible");
+  setTimeout(() => {
+    hideDonkey();
+    scheduleNextSpawn();
+  }, 200);
 });
 
-// Stop dropdown clicks from triggering the game
-difficultySelect.addEventListener("click", (e) => e.stopPropagation());
+// --- Timer ---
+function tick() {
+  timeLeft--;
+  timerEl.textContent = timeLeft;
 
-resetPbBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  personalBest = null;
-  localStorage.removeItem("reactionPB");
-  statPb.textContent = "—";
-});
+  if (timeLeft <= 5) {
+    timerDisplay.classList.add("urgent");
+  }
+
+  if (timeLeft <= 0) {
+    endGame();
+  }
+}
+
+// --- Game lifecycle ---
+function startGame() {
+  score = 0;
+  timeLeft = GAME_DURATION;
+  running = true;
+  scoreEl.textContent = "0";
+  timerEl.textContent = timeLeft;
+  timerDisplay.classList.remove("urgent");
+
+  overlay.classList.remove("visible");
+  hideDonkey();
+
+  // First spawn after a short beat
+  spawnTimeout = setTimeout(spawnDonkey, 600);
+  timerInterval = setInterval(tick, 1000);
+}
+
+function endGame() {
+  running = false;
+  clearInterval(timerInterval);
+  clearTimeout(spawnTimeout);
+  hideDonkey();
+
+  // Check high score
+  let newBest = false;
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("donkeyHighScore", highScore);
+    highScoreEl.textContent = highScore;
+    newBest = true;
+  }
+
+  // Show game-over overlay
+  overlayTitle.textContent = "Time's up!";
+  const lines = ["Final score: " + score];
+  if (newBest && score > 0) lines.push("New high score!");
+  overlaySub.innerHTML = lines.join("<br>");
+  startBtn.textContent = "Play Again";
+  overlay.classList.add("visible");
+}
+
+// --- Start button ---
+startBtn.addEventListener("click", startGame);
