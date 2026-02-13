@@ -4,34 +4,20 @@
   box-sizing: border-box;
 }
 
-body{
-  background-image:
-    linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
-    url("assets/images/grass.jpeg");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   height: 100vh;
   overflow: hidden;
-  color: #3a2e1f;
-  /* Green pasture background */
+
+  color: #fff;
+
   background:
-    /* sky gradient at top */
-    linear-gradient(
-      to bottom,
-      #87ceeb 0%,
-      #b0e0f0 35%,
-      #d4efc8 50%,
-      #6abf4b 55%,
-      #4a9e35 70%,
-      #3d8a2a 100%
-    );
-  /* prevent all touch side-effects globally */
+    linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)),
+    url("assets/images/grass.jpeg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
