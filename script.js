@@ -35,8 +35,10 @@ const SPEECH_LINES = [
   "\u041A\u041E\u0417\u0415\u0420\u041E\u0413!!!"  // КОЗЕРОГ!!!
 ];
 
-const IMG_PINATA = "assets/pinata.png";
-const IMG_REAL = "assets/real-donkey.png";
+const IMG_PINATA = "assets/images/pinata.png";
+const IMG_REAL = "assets/images/real-donkey.png";
+const IMG_BG = "assets/images/grass.jpeg";
+
 
 // --- Preload images ---
 const preloadPinata = new Image();
@@ -44,93 +46,80 @@ preloadPinata.src = IMG_PINATA;
 const preloadReal = new Image();
 preloadReal.src = IMG_REAL;
 
-// --- Audio ---
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let muted = false;
+// --- Audio (MP3, iPad-safe) ---
+let muted = localStorage.getItem("muted") === "1";
+muteBtn.textContent = muted ? "🔇" : "🔊";
+
+const SND_PINATA = "assets/sounds/pinatas.mp3";
+const SND_DONKEY = "assets/sounds/donkeys.mp3";
+
+// We create new Audio instances on demand for rapid overlaps (multiple taps).
+// But we "unlock" once on first user gesture so iPad/Safari allows playback.
+let audioUnlocked = false;
+
+function unlockAudioOnce() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+
+  // Attempt a silent play/pause to unlock audio on iOS/Safari
+  [SND_PINATA, SND_DONKEY].forEach((src) => {
+    try {
+      const a = new Audio(src);
+      a.muted = true;
+      a.play().then(() => {
+        a.pause();
+        a.currentTime = 0;
+        a.muted = false;
+      }).catch(() => {
+        // ignore; still counts as "gesture happened"
+      });
+    } catch (_) {}
+  });
+}
+
+// Call this before any sound play (safe to call repeatedly)
+function ensureUnlocked() {
+  if (!audioUnlocked) unlockAudioOnce();
+}
+
+function playSfx(src, { volume = 1, playbackRate = 1 } = {}) {
+  if (muted) return;
+  ensureUnlocked();
+
+  try {
+    const a = new Audio(src);
+    a.volume = volume;
+    a.playbackRate = playbackRate;
+    a.currentTime = 0;
+    a.play().catch(() => {});
+  } catch (_) {}
+}
 
 function playPop() {
-  if (muted) return;
-  const t = audioCtx.currentTime;
-  // Bright celebratory pop: quick rising tone + a harmonic sparkle
-  const osc1 = audioCtx.createOscillator();
-  const gain1 = audioCtx.createGain();
-  osc1.connect(gain1);
-  gain1.connect(audioCtx.destination);
-  osc1.type = "sine";
-  osc1.frequency.setValueAtTime(600, t);
-  osc1.frequency.exponentialRampToValueAtTime(1400, t + 0.06);
-  osc1.frequency.exponentialRampToValueAtTime(1800, t + 0.12);
-  gain1.gain.setValueAtTime(0.25, t);
-  gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-  osc1.start(t);
-  osc1.stop(t + 0.2);
-
-  // Second harmonic for richness
-  const osc2 = audioCtx.createOscillator();
-  const gain2 = audioCtx.createGain();
-  osc2.connect(gain2);
-  gain2.connect(audioCtx.destination);
-  osc2.type = "sine";
-  osc2.frequency.setValueAtTime(1200, t + 0.02);
-  osc2.frequency.exponentialRampToValueAtTime(2400, t + 0.1);
-  gain2.gain.setValueAtTime(0.12, t + 0.02);
-  gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-  osc2.start(t + 0.02);
-  osc2.stop(t + 0.18);
+  playSfx(SND_PINATA, { volume: 0.9 });
 }
 
 function playBray() {
-  if (muted) return;
-  const t = audioCtx.currentTime;
-  // Angry donkey bray: low buzzy sawtooth with pitch wobble
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.type = "sawtooth";
-  osc.frequency.setValueAtTime(180, t);
-  osc.frequency.linearRampToValueAtTime(260, t + 0.08);
-  osc.frequency.linearRampToValueAtTime(140, t + 0.16);
-  osc.frequency.linearRampToValueAtTime(220, t + 0.24);
-  osc.frequency.linearRampToValueAtTime(100, t + 0.35);
-  gain.gain.setValueAtTime(0.18, t);
-  gain.gain.linearRampToValueAtTime(0.22, t + 0.08);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
-  osc.start(t);
-  osc.stop(t + 0.38);
-
-  // Nasal overtone
-  const osc2 = audioCtx.createOscillator();
-  const gain2 = audioCtx.createGain();
-  osc2.connect(gain2);
-  gain2.connect(audioCtx.destination);
-  osc2.type = "square";
-  osc2.frequency.setValueAtTime(360, t);
-  osc2.frequency.linearRampToValueAtTime(520, t + 0.08);
-  osc2.frequency.linearRampToValueAtTime(280, t + 0.2);
-  gain2.gain.setValueAtTime(0.06, t);
-  gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-  osc2.start(t);
-  osc2.stop(t + 0.25);
+  playSfx(SND_DONKEY, { volume: 0.95 });
 }
 
+// Keep a "golden" sound: reuse pinata but higher pitch + slightly louder
 function playGolden() {
-  if (muted) return;
-  const t = audioCtx.currentTime;
-  [1046.5, 1318.5].forEach((freq, i) => {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(freq, t + i * 0.06);
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.25, t + i * 0.06 + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-    osc.start(t + i * 0.06);
-    osc.stop(t + 0.4);
-  });
+  playSfx(SND_PINATA, { volume: 1.0, playbackRate: 1.25 });
 }
+
+// --- Mute toggle ---
+muteBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  muted = !muted;
+  localStorage.setItem("muted", muted ? "1" : "0");
+  muteBtn.textContent = muted ? "🔇" : "🔊";
+});
+
+// Unlock audio on first interaction (important for iPad)
+document.addEventListener("pointerdown", unlockAudioOnce, { once: true });
+document.addEventListener("touchstart", unlockAudioOnce, { once: true, passive: true });
+
 
 // --- Mute toggle ---
 muteBtn.addEventListener("click", () => {
