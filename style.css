@@ -9,9 +9,7 @@ body {
   height: 100vh;
   overflow: hidden;
 
-  color: #fff;
-
-  background:
+  background-image:
     linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)),
     url("assets/images/grass.jpeg");
   background-size: cover;
@@ -22,6 +20,7 @@ body {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
+
 
 /* ---------- HUD ---------- */
 #hud {
