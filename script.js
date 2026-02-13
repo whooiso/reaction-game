@@ -83,30 +83,46 @@ function ensureUnlocked() {
   if (!audioUnlocked) unlockAudioOnce();
 }
 
-function playSfx(src, { volume = 1, playbackRate = 1 } = {}) {
-  if (muted) return;
-  ensureUnlocked();
-
-  try {
+function makePool(src, size = 6) {
+  const pool = Array.from({ length: size }, () => {
     const a = new Audio(src);
-    a.volume = volume;
-    a.playbackRate = playbackRate;
-    a.currentTime = 0;
-    a.play().catch(() => {});
-  } catch (_) {}
+    a.preload = "auto";
+    return a;
+  });
+  let i = 0;
+
+  return (volume = 1, playbackRate = 1) => {
+    if (muted) return;
+    ensureUnlocked();
+
+    const a = pool[i];
+    i = (i + 1) % pool.length;
+
+    try {
+      a.pause();
+      a.currentTime = 0;
+      a.volume = volume;
+      a.playbackRate = playbackRate;
+      a.play().catch(() => {});
+    } catch (_) {}
+  };
 }
 
+const playPinataSfx = makePool(SND_PINATA, 8);
+const playDonkeySfx = makePool(SND_DONKEY, 6);
+const playGoldenSfx = makePool(SND_GOLDEN, 4);
+
+
 function playPop() {
-  playSfx(SND_PINATA, { volume: 0.9 });
+  playPinataSfx(0.9, 1);
 }
 
 function playBray() {
-  playSfx(SND_DONKEY, { volume: 0.95 });
+  playDonkeySfx(0.95, 1);
 }
 
-// Keep a "golden" sound: reuse pinata but higher pitch + slightly louder
 function playGolden() {
-  playSfx(SND_GOLDEN, { volume: 1.0 });
+  playGoldenSfx(1.0, 1);
 }
 
 // --- Mute toggle ---
