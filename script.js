@@ -121,11 +121,6 @@ document.addEventListener("pointerdown", unlockAudioOnce, { once: true });
 document.addEventListener("touchstart", unlockAudioOnce, { once: true, passive: true });
 
 
-// --- Mute toggle ---
-muteBtn.addEventListener("click", () => {
-  muted = !muted;
-  muteBtn.textContent = muted ? "\uD83D\uDD07" : "\uD83D\uDD0A";
-});
 
 // --- State ---
 let score = 0;
@@ -448,7 +443,7 @@ function endGame() {
 
 // --- Start button ---
 startBtn.addEventListener("click", () => {
-  if (audioCtx.state === "suspended") audioCtx.resume();
+  unlockAudioOnce();     // important for iPad
   startGame();
 });
 
