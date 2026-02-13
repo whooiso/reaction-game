@@ -4,6 +4,15 @@
   box-sizing: border-box;
 }
 
+:root{
+  --navy: #0a0e1a;
+  --navyGlass: rgba(10, 14, 26, 0.78);
+  --navyGlass2: rgba(10, 14, 26, 0.70);
+  --text: #f2f1ed;
+  --muted: rgba(242, 241, 237, 0.72);
+}
+
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   height: 100vh;
@@ -32,13 +41,18 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 0.8rem 1.5rem;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--navyGlass2);
+  color: var(--text);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(10px);
   z-index: 20;
   font-size: 1.05rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+#score-display, #timer-display, #hud-right, #high-display {
+  color: var(--text);
 }
 
 #timer-display {
@@ -60,8 +74,8 @@ body {
 }
 
 #mute-btn {
-  background: none;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 6px;
   font-size: 1.1rem;
   padding: 0.25rem 0.5rem;
@@ -71,7 +85,7 @@ body {
 }
 
 #mute-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
+ background: rgba(255, 255, 255, 0.08);
 }
 
 @keyframes timer-shake {
@@ -97,7 +111,8 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(240, 248, 235, 0.93);
+  background: var(--navyGlass);
+  color: var(--text);
   backdrop-filter: blur(6px);
   z-index: 15;
   opacity: 0;
@@ -118,7 +133,8 @@ body {
 
 #overlay-sub {
   font-size: 1.05rem;
-  opacity: 0.6;
+  color: var(--muted);
+  opacity: 1;
   text-align: center;
   line-height: 1.7;
   margin-bottom: 1.8rem;
