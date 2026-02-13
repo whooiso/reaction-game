@@ -1,0 +1,64 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.05s;
+}
+
+#message {
+  font-size: 3rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+#subtitle {
+  margin-top: 1rem;
+  font-size: 1.25rem;
+  opacity: 0.7;
+}
+
+/* Idle — dark screen, waiting for player to start */
+.state-idle {
+  background-color: #1a1a2e;
+  color: #e0e0e0;
+}
+
+/* Waiting — dark screen, random delay before green */
+.state-waiting {
+  background-color: #1a1a2e;
+  color: #e0e0e0;
+}
+
+/* Ready — green, click now! */
+.state-ready {
+  background-color: #2ecc71;
+  color: #fff;
+}
+
+/* Result — show reaction time */
+.state-result {
+  background-color: #1a1a2e;
+  color: #e0e0e0;
+}
+
+/* Too early — clicked before green */
+.state-early {
+  background-color: #e74c3c;
+  color: #fff;
+}
