@@ -19,15 +19,21 @@ const GAME_DURATION = 30;
 const TARGET_SIZE = 120;
 const MARGIN_TOP = 70;
 const MARGIN = 20;
-const MIN_DIST = 140;       // minimum distance between target centers
-const LIFETIME_MIN = 700;
-const LIFETIME_MAX = 1200;
-const WAVE_GAP_MIN = 200;
-const WAVE_GAP_MAX = 500;
+const MIN_DIST = 140;
 const GOLDEN_CHANCE = 0.08;
-const REAL_CHANCE = 0.30;    // of non-golden targets
+const REAL_CHANCE = 0.30;
 
-const SPEECH_LINES = ["&$#@!", "HEY!", "BONK?!", "RUDE!", "NOPE!", "?!?"];
+// Async spawn settings
+const SPAWN_INTERVAL_MIN = 200;
+const SPAWN_INTERVAL_MAX = 450;
+const MAX_ON_SCREEN = 5;
+const LIFETIME_MIN = 900;
+const LIFETIME_MAX = 1400;
+
+const SPEECH_LINES = [
+  "&$#@!", "HEY!", "BONK?!", "RUDE!", "NOPE!", "?!?",
+  "\u041A\u041E\u0417\u0415\u0420\u041E\u0413!!!"  // КОЗЕРОГ!!!
+];
 
 const IMG_PINATA = "assets/pinata.png";
 const IMG_REAL = "assets/real-donkey.png";
@@ -44,38 +50,73 @@ let muted = false;
 
 function playPop() {
   if (muted) return;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.08);
-  gain.gain.setValueAtTime(0.22, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
-  osc.start(audioCtx.currentTime);
-  osc.stop(audioCtx.currentTime + 0.18);
+  const t = audioCtx.currentTime;
+  // Bright celebratory pop: quick rising tone + a harmonic sparkle
+  const osc1 = audioCtx.createOscillator();
+  const gain1 = audioCtx.createGain();
+  osc1.connect(gain1);
+  gain1.connect(audioCtx.destination);
+  osc1.type = "sine";
+  osc1.frequency.setValueAtTime(600, t);
+  osc1.frequency.exponentialRampToValueAtTime(1400, t + 0.06);
+  osc1.frequency.exponentialRampToValueAtTime(1800, t + 0.12);
+  gain1.gain.setValueAtTime(0.25, t);
+  gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+  osc1.start(t);
+  osc1.stop(t + 0.2);
+
+  // Second harmonic for richness
+  const osc2 = audioCtx.createOscillator();
+  const gain2 = audioCtx.createGain();
+  osc2.connect(gain2);
+  gain2.connect(audioCtx.destination);
+  osc2.type = "sine";
+  osc2.frequency.setValueAtTime(1200, t + 0.02);
+  osc2.frequency.exponentialRampToValueAtTime(2400, t + 0.1);
+  gain2.gain.setValueAtTime(0.12, t + 0.02);
+  gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+  osc2.start(t + 0.02);
+  osc2.stop(t + 0.18);
 }
 
-function playError() {
+function playBray() {
   if (muted) return;
+  const t = audioCtx.currentTime;
+  // Angry donkey bray: low buzzy sawtooth with pitch wobble
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.connect(gain);
   gain.connect(audioCtx.destination);
-  osc.type = "triangle";
-  osc.frequency.setValueAtTime(220, audioCtx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.18);
-  gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
-  osc.start(audioCtx.currentTime);
-  osc.stop(audioCtx.currentTime + 0.22);
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(180, t);
+  osc.frequency.linearRampToValueAtTime(260, t + 0.08);
+  osc.frequency.linearRampToValueAtTime(140, t + 0.16);
+  osc.frequency.linearRampToValueAtTime(220, t + 0.24);
+  osc.frequency.linearRampToValueAtTime(100, t + 0.35);
+  gain.gain.setValueAtTime(0.18, t);
+  gain.gain.linearRampToValueAtTime(0.22, t + 0.08);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+  osc.start(t);
+  osc.stop(t + 0.38);
+
+  // Nasal overtone
+  const osc2 = audioCtx.createOscillator();
+  const gain2 = audioCtx.createGain();
+  osc2.connect(gain2);
+  gain2.connect(audioCtx.destination);
+  osc2.type = "square";
+  osc2.frequency.setValueAtTime(360, t);
+  osc2.frequency.linearRampToValueAtTime(520, t + 0.08);
+  osc2.frequency.linearRampToValueAtTime(280, t + 0.2);
+  gain2.gain.setValueAtTime(0.06, t);
+  gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+  osc2.start(t);
+  osc2.stop(t + 0.25);
 }
 
 function playGolden() {
   if (muted) return;
   const t = audioCtx.currentTime;
-  // Two-note sparkle chord
   [1046.5, 1318.5].forEach((freq, i) => {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -101,13 +142,13 @@ muteBtn.addEventListener("click", () => {
 let score = 0;
 let timeLeft = GAME_DURATION;
 let timerInterval = null;
-let waveTimeout = null;
+let spawnTimerId = null;
 let running = false;
-let activeTargets = [];  // { el, type, cx, cy, timeoutId }
+let activeTargets = [];
 
 // Stats
 let hits = 0;
-let misses = 0;      // targets that expired without being clicked
+let misses = 0;
 let streak = 0;
 let bestStreak = 0;
 
@@ -185,7 +226,7 @@ function flashRed() {
 }
 
 // --- Positioning with collision avoidance ---
-function findPosition(existing, maxAttempts) {
+function findPosition(maxAttempts) {
   const areaW = window.innerWidth - MARGIN * 2 - TARGET_SIZE;
   const areaH = window.innerHeight - MARGIN_TOP - MARGIN - TARGET_SIZE;
 
@@ -196,14 +237,14 @@ function findPosition(existing, maxAttempts) {
     const cy = y + TARGET_SIZE / 2;
 
     let ok = true;
-    for (const t of existing) {
+    for (const t of activeTargets) {
       const dx = cx - t.cx;
       const dy = cy - t.cy;
       if (Math.sqrt(dx * dx + dy * dy) < MIN_DIST) { ok = false; break; }
     }
     if (ok) return { x, y, cx, cy };
   }
-  return null; // couldn't place — skip this target
+  return null;
 }
 
 // --- Pick target type ---
@@ -242,25 +283,26 @@ function spawnTarget(type, pos) {
   el.style.left = pos.x + "px";
   el.style.top = pos.y + "px";
 
-  const entry = { el, type, cx: pos.cx, cy: pos.cy, timeoutId: null };
+  const entry = { el, type, cx: pos.cx, cy: pos.cy, timeoutId: null, hit: false };
 
-  // Lifetime: auto-expire
+  // Lifetime: auto-expire independently
   const lifetime = LIFETIME_MIN + Math.random() * (LIFETIME_MAX - LIFETIME_MIN);
   entry.timeoutId = setTimeout(() => {
-    if (!el.parentNode) return;
-    // Missed — no penalty, just track the miss
+    if (!el.parentNode || entry.hit) return;
     misses++;
     el.className = "target expiring";
     el.addEventListener("animationend", () => el.remove());
     removeTarget(entry);
   }, lifetime);
 
-  // Click handler
-  el.addEventListener("click", () => {
-    if (!running) return;
+  // pointerdown handler — each target independently handles its own hit
+  el.addEventListener("pointerdown", (e) => {
+    if (!running || entry.hit) return;
     // Ignore if already animating out
     if (el.className.includes("hit-") || el.className.includes("expiring")) return;
 
+    e.preventDefault();
+    entry.hit = true;
     clearTimeout(entry.timeoutId);
     removeTarget(entry);
 
@@ -281,23 +323,25 @@ function spawnTarget(type, pos) {
       hits++;
       streak = 0;
       showFloat(fx, fy, "-1", "negative");
-      playError();
+      playBray();
       flashRed();
 
-      // A) Speech bubble
-      const bubble = document.createElement("div");
-      bubble.className = "speech-bubble";
-      bubble.textContent = SPEECH_LINES[Math.floor(Math.random() * SPEECH_LINES.length)];
-      el.appendChild(bubble);
+      // A) Speech bubble (sometimes)
+      if (Math.random() < 0.7) {
+        const bubble = document.createElement("div");
+        bubble.className = "speech-bubble";
+        bubble.textContent = SPEECH_LINES[Math.floor(Math.random() * SPEECH_LINES.length)];
+        el.appendChild(bubble);
+      }
 
       // B) "Mouth open" illusion
       const imgEl = el.querySelector("img");
-      const overlay = el.querySelector(".mouth-overlay");
+      const mouthOv = el.querySelector(".mouth-overlay");
       if (imgEl) imgEl.classList.add("mouth-open");
-      if (overlay) overlay.classList.add("active");
+      if (mouthOv) mouthOv.classList.add("active");
       setTimeout(() => {
         if (imgEl) imgEl.classList.remove("mouth-open");
-        if (overlay) overlay.classList.remove("active");
+        if (mouthOv) mouthOv.classList.remove("active");
       }, 120);
 
       el.className = "target real hit-real";
@@ -321,25 +365,25 @@ function spawnTarget(type, pos) {
   activeTargets.push(entry);
 }
 
-// --- Wave spawner ---
-function spawnWave() {
+// --- Async chaotic spawner (replaces wave-based) ---
+function scheduleNextSpawn() {
   if (!running) return;
+  const delay = SPAWN_INTERVAL_MIN + Math.random() * (SPAWN_INTERVAL_MAX - SPAWN_INTERVAL_MIN);
+  spawnTimerId = setTimeout(() => {
+    if (!running) return;
 
-  const count = 1 + Math.floor(Math.random() * 3); // 1–3
-  const placed = [];
+    // Only spawn if under the on-screen cap
+    if (activeTargets.length < MAX_ON_SCREEN) {
+      const type = pickType();
+      const pos = findPosition(30);
+      if (pos) {
+        spawnTarget(type, pos);
+      }
+    }
 
-  for (let i = 0; i < count; i++) {
-    const type = pickType();
-    const allPositions = activeTargets.concat(placed);
-    const pos = findPosition(allPositions, 30);
-    if (!pos) continue; // skip if can't place
-    placed.push({ cx: pos.cx, cy: pos.cy });
-    spawnTarget(type, pos);
-  }
-
-  // Schedule next wave after the longest possible lifetime + gap
-  const gap = WAVE_GAP_MIN + Math.random() * (WAVE_GAP_MAX - WAVE_GAP_MIN);
-  waveTimeout = setTimeout(spawnWave, LIFETIME_MAX + gap);
+    // Schedule the next one regardless
+    scheduleNextSpawn();
+  }, delay);
 }
 
 // --- Timer ---
@@ -370,14 +414,15 @@ function startGame() {
 
   overlay.classList.remove("visible");
 
-  waveTimeout = setTimeout(spawnWave, 500);
+  // Start async spawner after short delay
+  spawnTimerId = setTimeout(scheduleNextSpawn, 300);
   timerInterval = setInterval(tick, 1000);
 }
 
 function endGame() {
   running = false;
   clearInterval(timerInterval);
-  clearTimeout(waveTimeout);
+  clearTimeout(spawnTimerId);
 
   // Expire all remaining targets instantly
   for (const entry of [...activeTargets]) {
@@ -417,3 +462,10 @@ startBtn.addEventListener("click", () => {
   if (audioCtx.state === "suspended") audioCtx.resume();
   startGame();
 });
+
+// Prevent default touch behaviors on the arena during gameplay
+arena.addEventListener("touchstart", (e) => {
+  if (running && e.target.closest(".target")) {
+    e.preventDefault();
+  }
+}, { passive: false });

@@ -8,8 +8,23 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   height: 100vh;
   overflow: hidden;
-  background: #fdf6ec;
   color: #3a2e1f;
+  /* Green pasture background */
+  background:
+    /* sky gradient at top */
+    linear-gradient(
+      to bottom,
+      #87ceeb 0%,
+      #b0e0f0 35%,
+      #d4efc8 50%,
+      #6abf4b 55%,
+      #4a9e35 70%,
+      #3d8a2a 100%
+    );
+  /* prevent all touch side-effects globally */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ---------- HUD ---------- */
@@ -76,6 +91,7 @@ body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  touch-action: manipulation;
 }
 
 /* ---------- Overlay ---------- */
@@ -86,7 +102,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(253, 246, 236, 0.93);
+  background: rgba(240, 248, 235, 0.93);
   backdrop-filter: blur(6px);
   z-index: 15;
   opacity: 0;
@@ -161,6 +177,8 @@ body {
   user-select: none;
   width: 120px;
   height: 120px;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
 }
 
 .target img {
@@ -169,6 +187,7 @@ body {
   object-fit: contain;
   display: block;
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.16));
+  pointer-events: none;
 }
 
 /* Golden tint */
@@ -211,7 +230,7 @@ body {
   transition: transform 0.05s ease, filter 0.05s ease;
 }
 
-/* Darkened lower-face gradient overlay via the target's ::after */
+/* Darkened lower-face gradient overlay */
 .target.real .mouth-overlay {
   position: absolute;
   inset: 0;
